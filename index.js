@@ -2,51 +2,49 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 
+// 1. Home Page Branding
+app.get('/', (req, res) => {
+    res.send(`
+        <div style="font-family: Arial; text-align: center; margin-top: 50px;">
+            <h1>✅ Ayu AI API is Live!</h1>
+            <p>Made with ❤️ by <b>Ayu</b></p>
+            <p>Use: <code>/ayu-ai?q=hello</code></p>
+        </div>
+    `);
+});
+
+// 2. Main AI Route
 app.get('/ayu-ai', async (req, res) => {
     const prompt = req.query.q;
-    const key = process.env.GEMINI_KEY; // Aapki secret key
+    const key = process.env.GEMINI_KEY;
 
-    // Agar user ne sawal nahi pucha
-    if (!prompt) {
-        return res.json({ 
-            status: false, 
-            message: "Arey! Sawal toh pucho. Example: /ayu-ai?q=hello",
-            creator: "Ayu" 
-        });
-    }
+    if (!prompt) return res.json({ status: false, creator: "Ayu", error: "Prompt pucho yarr!" });
 
     try {
-        // Naya Gemini 2.5 Flash Model
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+        // Naya Gemini 2.5 Flash Model jo aapki key support karti hai
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+            { contents: [{ parts: [{ text: prompt }] }] }
+        );
         
-        const response = await axios.post(apiUrl, {
-            contents: [{ parts: [{ text: prompt }] }]
-        });
-
-        // AI ka reply nikaalna
-        const aiReply = response.data.candidates[0].content.parts[0].text;
-
-        // Aapki branding ke saath response
-        res.json({
-            status: true,
-            creator: "Ayu",
-            result: `✨ *OFFICIAL AI BY AYU*\n\n${aiReply}\n\n🚀 _Powered by Ayu AI API_`
+        const result = response.data.candidates[0].content.parts[0].text;
+        
+        res.json({ 
+            status: true, 
+            creator: "Ayu", 
+            result: result 
         });
 
     } catch (error) {
-        // Agar limit khatam ho jaye (1,500 requests/day)
-        res.json({ 
+        
+        res.status(200).json({ 
             status: false, 
-            error: "Server Busy ya Limit Reach! Thodi der baad try karein.",
-            creator: "Ayu",
-            details: error.response ? error.response.data : error.message 
+            creator: "Ayu", 
+            error: "Limit reach ya model error!",
+            msg: "Check Vercel Logs for more info."
         });
     }
 });
 
-// Home page par bhi branding dikhao
-app.get('/', (req, res) => {
-    res.send("<h1>✅ Ayu AI API is Live!</h1><p>Use <b>/ayu-ai?q=YourQuestion</b> to chat.</p><p><i>Made with ❤️ by Ayu</i></p>");
-});
-
+// Vercel ke liye zaroori export
 module.exports = app;
