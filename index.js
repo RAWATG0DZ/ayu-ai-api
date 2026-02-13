@@ -1,33 +1,52 @@
-import express from 'express';
-import axios from 'axios';
+const express = require('express');
+const axios = require('axios');
 const app = express();
 
 app.get('/ayu-ai', async (req, res) => {
-    const query = req.query.q;
-    const apiKey = process.env.GEMINI_KEY; 
+    const prompt = req.query.q;
+    const key = process.env.GEMINI_KEY; // Aapki secret key
 
-    if (!query) return res.json({ error: "Sawal pucho! 🤪" });
+    // Agar user ne sawal nahi pucha
+    if (!prompt) {
+        return res.json({ 
+            status: false, 
+            message: "Arey! Sawal toh pucho. Example: /ayu-ai?q=hello",
+            creator: "Ayu" 
+        });
+    }
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Naya Gemini 2.5 Flash Model
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
         
-        const response = await axios.post(url, {
-            contents: [{ 
-                parts: [{ text: "System: You are a polite AI. Always start with 'Greetings from Ayu!'. User: " + query }] 
-            }]
+        const response = await axios.post(apiUrl, {
+            contents: [{ parts: [{ text: prompt }] }]
         });
 
-        const aiText = response.data.candidates[0].content.parts[0].text;
+        // AI ka reply nikaalna
+        const aiReply = response.data.candidates[0].content.parts[0].text;
 
+        // Aapki branding ke saath response
         res.json({
             status: true,
             creator: "Ayu",
-            result: aiText
+            result: `✨ *OFFICIAL AI BY AYU*\n\n${aiReply}\n\n🚀 _Powered by Ayu AI API_`
         });
-    } catch (e) {
-        res.json({ status: false, error: "Server busy! Vercel settings mein GEMINI_KEY check karein." });
+
+    } catch (error) {
+        // Agar limit khatam ho jaye (1,500 requests/day)
+        res.json({ 
+            status: false, 
+            error: "Server Busy ya Limit Reach! Thodi der baad try karein.",
+            creator: "Ayu",
+            details: error.response ? error.response.data : error.message 
+        });
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Ayu's API Live!`));
+// Home page par bhi branding dikhao
+app.get('/', (req, res) => {
+    res.send("<h1>✅ Ayu AI API is Live!</h1><p>Use <b>/ayu-ai?q=YourQuestion</b> to chat.</p><p><i>Made with ❤️ by Ayu</i></p>");
+});
+
+module.exports = app;
