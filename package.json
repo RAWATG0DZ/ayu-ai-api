@@ -1,13 +1,17 @@
 {
   "name": "ayu-ai-api",
   "version": "1.0.0",
+  "description": "Ayu AI API with Gemini 2.5 Flash",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
